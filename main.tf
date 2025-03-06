@@ -1,7 +1,5 @@
 module "vpc" {
   source = "./modules/vpc"
-  #   access_key = var.access_key
-  #   secret_key = var.secret_key
 }
 
 module "bastion-server" {
@@ -11,7 +9,6 @@ module "bastion-server" {
   associate_public_ip = var.associate_public_ip
   security_group_id   = module.vpc.security_group_id
   subnet_id           = module.vpc.public_subnet_1
-  #   ami                 = data.aws_ami.latest_ubuntu.id
   depends_on = [
     module.vpc
   ]
@@ -48,18 +45,14 @@ module "ecr" {
 
 resource "aws_ecs_cluster" "main_cluster" {
   name = var.cluster_name
-
   tags = {
     Name = var.cluster_name
   }
 }
 
-# locals {
-#   services = {
-#     app1 = "service1-ecr"
-#     app2 = "service2-ecr"
-#   }
-# }
+resource "aws_sns_topic" "ecs_alerts" {
+  name = "ecs-high-cpu-alerts"
+}
 
 locals {
   services = {
@@ -69,17 +62,36 @@ locals {
 }
 
 module "ecs_services" {
-  for_each = local.services
-  # for_each = local.ECS-services
+  for_each     = local.services
   source       = "./modules/ecs"
   cluster_id   = aws_ecs_cluster.main_cluster.id # Correct reference to ECS cluster ID
   service_name = each.key                        # Pass each service name
   vpc_id       = module.vpc.vpc_id
   subnets      = module.vpc.private_subnets
   # image_url    = "${lookup(module.ecr.ecr_repository_urls, each.value)}:latest"
-  image_url = "${lookup(module.ecr.ecr_repository_urls, each.key, "default-image")}:latest"
+  image_url     = "${lookup(module.ecr.ecr_repository_urls, each.key, "default-image")}:latest"
+  sns_topic_arn = aws_sns_topic.ecs_alerts.arn
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # module "ecs" {
 #   source       = "./modules/ecs"
@@ -115,3 +127,10 @@ module "ecs_services" {
 #   ecr_repo_url    = module.ecr.repository_url
 # }
 
+
+# locals {
+#   services = {
+#     app1 = "service1-ecr"
+#     app2 = "service2-ecr"
+#   }
+# }

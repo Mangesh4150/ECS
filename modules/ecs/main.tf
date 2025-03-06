@@ -1,19 +1,9 @@
-# resource "aws_ecs_cluster" "ECS" {
-# #   name = "my-cluster"
-#     name = var.cluster_name
-
-#   tags = {
-#     Name = "my-new-cluster"
-#   }
-# }  
-
-resource "aws_security_group" "SG" {
+ resource "aws_security_group" "SG" {
 #   name        = "SG"
 #   description = "Allow Port 80"
   for_each    = var.sg_names
   name        = "SG-${each.key}"  # Ensure unique names per service
   description = "Security group for ${each.key}"
-#   vpc_id      = aws_vpc.vpc.id
     vpc_id      = var.vpc_id
   ingress {
     from_port   = 80
@@ -67,7 +57,8 @@ name            = "my-service-${var.service_name}"
 }
 
 resource "aws_ecs_task_definition" "TD" {
-  family                   = "nginx"
+  # family                   = "nginx"
+  family                   = "nginx-${var.service_name}"  # Unique family name per service
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = aws_iam_role.iam-role.arn
   network_mode             = "awsvpc"
@@ -75,9 +66,9 @@ resource "aws_ecs_task_definition" "TD" {
   memory                   = 2048
   container_definitions = jsonencode([
     {
-      name      = "main-container"
-    #   image     = "gomurali/exp-app-1:2"
-        image     = var.image_url
+      # name      = "main-container"
+      name      = "app-${var.service_name}"  # Unique container name per service
+      image     = var.image_url
       cpu       = 1024
       memory    = 2048
       essential = true
@@ -137,6 +128,68 @@ resource "aws_lb_target_group" "TG" {
 
   tags = {
     Name = "TG"
+  }
+}
+
+#### Define Auto Scaling Target ####
+resource "aws_appautoscaling_target" "ecs_target" {
+  max_capacity       = 5  # Maximum number of tasks
+  min_capacity       = 2  # Minimum number of tasks
+  resource_id        = "service/${var.cluster_id}/${var.service_name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+
+#### Define Auto Scaling Policies - Scale-Up Policy ####
+resource "aws_appautoscaling_policy" "scale_up" {
+  name               = "scale-up-${var.service_name}"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value = 60.0  # Scale up when CPU > 60%
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+  }
+}
+
+#### Define Auto Scaling Policies - Scale-Down Policy ####
+resource "aws_appautoscaling_policy" "scale_down" {
+  name               = "scale-down-${var.service_name}"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value = 30.0  # Scale down when CPU < 30%
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+  }
+}
+
+
+
+#### Add CloudWatch Alarms ####
+resource "aws_cloudwatch_metric_alarm" "high_cpu_alarm" {
+  alarm_name          = "high-cpu-${var.service_name}"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace          = "AWS/ECS"
+  period             = 60
+  statistic          = "Average"
+  threshold         = 80.0
+  alarm_description  = "Alert: CPU utilization is above 80%"
+  alarm_actions      = [var.sns_topic_arn]  # SNS topic for notifications
+  dimensions = {
+    ClusterName = var.cluster_id
+    ServiceName = var.service_name
   }
 }
 
@@ -262,3 +315,12 @@ resource "aws_lb_target_group" "TG" {
 #   }
 # }
 
+
+# resource "aws_ecs_cluster" "ECS" {
+# #   name = "my-cluster"
+#     name = var.cluster_name
+
+#   tags = {
+#     Name = "my-new-cluster"
+#   }
+# } 

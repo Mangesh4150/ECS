@@ -10,22 +10,25 @@ variable "region" {
   type = string
 }
 
+
+
 #### Variables For Bastion-Server ####
 
 variable "instance_type_bastion" {
   type = string
 }
-# variable "associate_public_ip" {}
 
 variable "associate_public_ip" {
   type = bool
 }
 
+
+
 #### Variables for storage account ####
 variable "s3_bucket_name" {}
 variable "environment" {}
 variable "enable_lock" { default = false }
-# variable "region" {}
+
 
 #### Variables for container registry ####
 variable "registry_count" {

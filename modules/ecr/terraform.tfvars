@@ -6,4 +6,4 @@ tags = {
 }
 scan_on_push         = true
 image_tag_mutability = "IMMUTABLE"
-retention_days       = 60
+retention_days       = 30
