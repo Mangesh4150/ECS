@@ -133,6 +133,8 @@ resource "aws_lb_target_group" "TG" {
 
 #### Define Auto Scaling Target ####
 resource "aws_appautoscaling_target" "ecs_target" {
+  depends_on         = [aws_ecs_service.ECS-Service] 
+  # depends_on         = values(aws_ecs_service.ECS-Service)  # Wait for all ECS services
   max_capacity       = 5  # Maximum number of tasks
   min_capacity       = 2  # Minimum number of tasks
   resource_id        = "service/${var.cluster_id}/${var.service_name}"
@@ -143,6 +145,7 @@ resource "aws_appautoscaling_target" "ecs_target" {
 
 #### Define Auto Scaling Policies - Scale-Up Policy ####
 resource "aws_appautoscaling_policy" "scale_up" {
+ 
   name               = "scale-up-${var.service_name}"
   policy_type        = "TargetTrackingScaling"
   resource_id        = aws_appautoscaling_target.ecs_target.resource_id
