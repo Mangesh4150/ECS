@@ -1,0 +1,16 @@
+# ami_id                   = "ami-0ed9277fb7eb570c9"
+instance_type            = "t2.micro"
+associate_public_ip      = true
+az                       = "us-east-1a"
+disable_api_termination  = false
+instance_profile         = "ec2-instance-new-profile"
+key                      = "dev-account"
+# sg                       = ["sg-0858149edde4ae5ae"]
+# subnet_id                = "subnet-03a2ea8c56ec8a1f2"
+volume_size              = 10
+application              = "tcw"
+organization             = "thecloudworld"
+# ami_name_pattern        = "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-*"
+ami_name_pattern          = "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"
+ami_virtualization_type     = "hvm"
+# ami_owner_id            = "099720109477"  # Example: Custom AMI owner ID

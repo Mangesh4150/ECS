@@ -1,0 +1,9 @@
+engine_name           = "mysql"
+db_name               = "tcw"
+user_name             = "tcw"
+pass                  = "TheCloudWorld.2019"
+multi_az_deployment   = false
+public_access         = false
+skip_finalSnapshot    = true
+delete_automated_backup = true
+instance_class        = "db.t3.micro"
